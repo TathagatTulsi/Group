@@ -1,0 +1,28 @@
+var http = require('http');
+var fs = require('fs');
+http.createServer(function (req, res) {
+  fs.readFile('demofile1.html', function(err, data) {
+    res.writeHead(200, {'Content-Type': 'text/html'});
+    res.write(data);
+    return res.end();
+  });
+}).listen(8080);
+
+
+
+
+1. Import the required modules: http and fs
+
+2. Create an HTTP server:
+   a. Define a function that takes a request (req) and a response (res) as parameters
+      i. Read the contents of the file demofile1.html using the fs.readFile method:
+         - If an error occurs during the file read, handle the error
+         - If successful, proceed to the next step
+      ii. Set the response's content type to 'text/html' using the res.writeHead method
+      iii. Write the contents of the file as the response body using the res.write method
+      iv. End the response using the res.end method
+   
+   b. Listen for incoming requests on the server by calling the createServer method of the http module and passing the request handler function as a parameter
+      i. The server will be bound to a specific port (e.g., 8080)
+   
+3. End of the code
