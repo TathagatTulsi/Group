@@ -1,0 +1,43 @@
+import { useReducer } from "react";
+
+const reducerfunc = (state, action) => {
+    console.log(state, action);
+    switch (action.type) {
+      case "INCREMENT":
+        return { ...state, count: state.count + 1 };
+      case "DECREMENT":
+        return { ...state, count: state.count - 1 };
+      case "input":
+        return {...state , num: +action.payload };
+      case "add":
+        return {...state , count: state.count + +state.num}
+      case "sub":
+        return {...state , count: state.count - +state.num}
+    
+      default:
+        console.log("breaking");
+        break;
+    }
+    return state;
+  };
+  
+
+  export default function Reducers (){
+    const [state, dispatch] = useReducer(reducerfunc, { count: 0 , num:0});
+    const handleClick =(e)=>{
+        const newNum = e.target.value
+        dispatch({type:"input" , payload:newNum})
+    }
+    return (
+        <div className="App">
+          <h1>Counter</h1>
+          <div>Count:{state.count}</div>
+          <input  type="number" onChange={handleClick} value={state.num} />
+          <button onClick={() => dispatch({ type: "INCREMENT" })}>incre</button>
+          <button onClick={() => dispatch({ type: "DECREMENT" })}>decre</button>
+          <button onClick={() => dispatch({ type: "add" })}>Add</button>
+          <button onClick={() => dispatch({ type: "sub"  })}>sub</button>
+
+        </div>
+      );
+}
