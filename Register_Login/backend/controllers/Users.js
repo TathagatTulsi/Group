@@ -1,84 +1,140 @@
-import Users from "../models/UserModel.js";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+const Users = require("../models/UserModel");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+// const { userSchema, loginSchema } = require("./joiValidation");
+const nodemailer = require("nodemailer")
+exports.Register = async (req, res) => {
+  // //joi validation
+  // const { error } = userSchema.validate(req.body);
+  // if (error) return res.status(400).send(error.details[0].message);
 
-export const getUsers = async (req, res) => {
-    try {
-        const users = await Users.findAll({
-            attributes: ['id', 'name', 'email']
-        });
-        res.json(users);
-    } catch (error) {
-        console.log(error);
-    }
-}
-
-export const Register = async (req, res) => {
-    const { name, email, password, confPassword } = req.body;
-    if (password !== confPassword)
-        return res.status(400).json({ msg: "Password and Confirm Password do not match" });
-    const salt = await bcrypt.genSalt();
-    const hashPassword = await bcrypt.hash(password, salt);
-    try {
-        await Users.create({
-            name: name,
-            email: email,
-            password: hashPassword
-        });
-        res.json({ msg: "Registration Successful" });
-    } catch (error) {
-        console.log(error);
-    }
-}
-
-export const Login = async (req, res) => {
-    try {
-        const user = await Users.findAll({
-            where: {
-                email: req.body.email
-            }
-        });
-        const match = await bcrypt.compare(req.body.password, user[0].password);
-        if (!match) return res.status(400).json({ msg: "Wrong Password" });
-        const userId = user[0].id;
-        const name = user[0].name;
-        const email = user[0].email;
-        const accessToken = jwt.sign({ userId, name, email }, process.env.ACCESS_TOKEN_SECRET, {
-            expiresIn: '15s'
-        });
-        const refreshToken = jwt.sign({ userId, name, email }, process.env.REFRESH_TOKEN_SECRET, {
-            expiresIn: '1d'
-        });
-        await Users.update({ refresh_token: refreshToken }, {
-            where: {
-                id: userId
-            }
-        });
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000
-        });
-        res.json({ accessToken });
-    } catch (error) {
-        res.status(404).json({ msg: "Email not found" });
-    }
-}
-
-export const Logout = async (req, res) => {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return res.sendStatus(204);
-    const user = await Users.findAll({
-        where: {
-            refresh_token: refreshToken
-        }
+  const { name, lastname, email, password, confPassword } = req.body;
+  try {
+    const find = await Users.findOne({
+      where: { email },
     });
-    if (!user[0]) return res.sendStatus(204);
-    const userId = user[0].id;
-    await Users.update({ refresh_token: null }, {
-        where: {
-            id: userId
-        }
+
+    if (find) {
+      return res.status(200).json({ success: false, msg: "Already account" });
+    }
+
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(password, salt);
+
+    const NewUser = await Users.create({ name, lastname, email, password: hash });
+    const token = jwt.sign({ user: NewUser }, process.env.REFRESH_TOKEN_SECRET);
+
+    return res.status(200).json({ success: true, msg: "Successfully!!", token: token });
+  } catch (error) {
+    console.log(error);
+    return res.status(404).json({ msg: error });
+  }
+}
+
+exports.Login = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const find = await Users.findOne({
+      where: {
+        email,
+      },
     });
-    res.clearCookie('refreshToken');
-    return res.sendStatus(200);
+
+    if (find) {
+      const compare = bcrypt.compareSync(password, find.password);
+
+      if (compare) {
+        const token = jwt.sign({ user: find }, process.env.REFRESH_TOKEN_SECRET);
+
+        return res.status(200).json({ success: true, msg: "Login successfull!!", token: token,});
+      }
+      else {
+        return res.status(400).json({success: false, msg: "New password and confirm Password Not match"})
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(404).json({ msg: error });
+  }
+}
+
+function generatePassword(length) {
+  const characters = '0123456789';
+  let password = '';
+  for (let i = 0; i < 8; i++) {
+    const index = Math.floor(Math.random() * characters.length);
+    password += characters[index];
+  }
+  return password;
+}
+
+exports.forgot = async(req, res) =>{
+  try {
+    const {email} = req.body;
+    // console.log(email)
+    const user = await Users.findOne({
+      where: { email }
+    })
+    if(!user){
+      return res.status(404).json({ msg: "User Not Found" });
+    }
+
+    const randomPassword = generatePassword();
+    console.log(randomPassword)
+
+    const salt = await bcrypt.genSalt(10)
+    const hashPassword = await bcrypt.hash(randomPassword,salt)
+    const updatePassword = await Users.update({password:hashPassword},{where : {email:email}})
+
+  
+    let transporter = await nodemailer.createTransport({
+      service: "gmail",
+      port: 587,
+      //secure: false, // true for 465, false for other ports
+      auth: {
+        user: 'onlytulsi.1@gmail.com',
+        pass: 'wyjcrudwsretxwug'
+      },
+    });
+    
+    const mailOptions = {
+      from: '<onlytulsi.1@gmail.com>',
+      to: email,
+      subject: "Your reset passwrd",
+      text: `Your password is : ${randomPassword}`,
+    };
+  
+      await transporter.sendMail(mailOptions);
+      res.status(200).json({success: true, msg: "Password sent successfully"})
+      // console.log('OTP sent successfully:', info.response);
+
+  } catch (error) {
+    
+  }
+}
+
+
+exports.changepassword = async (req, res) =>{
+  try {
+    const {email, password, newPassword, confirmPassword} = req.body;
+    if(newPassword !== confirmPassword){
+      return res.status(400).json({err: "New password and confirm Password Not match"})
+    }
+    const user = await Users.findOne({ where: { email:email } })
+
+    if(user){
+      const valid = await bcrypt.compare(password, user.password)
+      if(valid){
+        
+        const salt = bcrypt.genSaltSync(10)
+        const hashPassword = bcrypt.hashSync(newPassword,salt)
+  
+        await user.update({password:hashPassword},{where : {email:email}})
+        return res.status(200).json({success: true, msg: "Verified Successfully"})
+      }
+
+    }
+  } catch (error) {
+    console.log(error)
+  }
 }

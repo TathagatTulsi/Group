@@ -1,6 +1,6 @@
-import { Sequelize } from "sequelize";
+const Sequelize = require('sequelize')
  
-const db = new Sequelize('auth_db', 'root', 'smart@2099', {
+const db = new Sequelize('loginregister', 'root', 'smart@2099', {
     host: "localhost",
     dialect: "mysql"
 });
@@ -8,12 +8,10 @@ const db = new Sequelize('auth_db', 'root', 'smart@2099', {
 
 db.authenticate().then(async () => {
     console.log("Connection has been established successfully.");
-    await db.sync();
-
 }).catch((e) => {
 
     console.log(e);
 
 })
 
-export default db;
+module.exports = db;

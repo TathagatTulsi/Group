@@ -1,11 +1,12 @@
-const { add, get, search, searchcategory, deleted} = require('../controllers/ControllerProduct');
+const express = require('express')
+const {Register, Login, forgot, changepassword} = require("../controllers/Users.js");
+
  
 const router = express.Router();
+ 
+router.post('/register', Register);
+router.post('/login', Login);
+router.post('/forgot', forgot)
+router.post('/changepassword', changepassword)
 
-router.post('/add', add);
-router.get('/get', get);
-router.get('/search', search)
-router.get('/searchcategory', searchcategory)
-router.delete('/deleted', deleted)
-
-module.exports = router
+module.exports=router;

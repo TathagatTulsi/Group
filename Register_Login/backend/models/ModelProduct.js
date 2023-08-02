@@ -1,8 +1,6 @@
-// const { Sequelize, DataTypes } = require('sequelize');
-// const sequelize = require("../config/Database");
-
-import { Sequelize} from "sequelize";
-import sequelize from "../config/Database.js";
+const { Sequelize} = require('sequelize');
+const sequelize = require("../config/Database");
+const Users = require('./UserModel');
  
 const { DataTypes } = Sequelize;
 
@@ -22,7 +20,24 @@ const product = sequelize.define('productModel', {
   category:{
     type: DataTypes.STRING,
     allowNull: false,
-  }
+  },
+  ownerId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Users,
+      key: "id",
+    },
+    required: true,
+  },
   
 });
+
+Users.hasMany(product, {
+  foreignKey: "ownerId",
+});
+
+product.belongsTo(Users, {
+  foreignKey: "ownerId",
+});
+
 module.exports = product;

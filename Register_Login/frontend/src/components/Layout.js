@@ -1,13 +1,13 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
 import Navbar from './Navbar'
-import Fun from './Function'
+// import Product from './Product.js'
 
 function Layout() {
   return (
     <div>
         <Navbar/>
-        <Fun />
+        {/* <Product /> */}
         <Outlet/>
     </div>
   )
